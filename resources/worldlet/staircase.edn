@@ -1,0 +1,13 @@
+{:facts {:hour 0 :moon :awake :stairs 0}
+ :rules [{:id :clock
+          :when []
+          :add {:hour 1}}
+         {:id :moon-falls-asleep
+          :when [[:= :hour 2]]
+          :set {:moon :asleep}}
+         {:id :stairs-dream
+          :when [[:= :moon :asleep]]
+          :add {:stairs 1}}
+         {:id :moon-wakes
+          :when [[:= :hour 5]]
+          :set {:moon :awake}}]}
