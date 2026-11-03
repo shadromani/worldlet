@@ -92,6 +92,10 @@ There is no last-writer-wins priority. A rule also cannot both set and add to th
 same fact. Effects that would invalidate a numeric predicate or addition on the
 next step are rejected before a world is returned.
 
+For invalid rules, exception data includes the original `:rule` and its
+zero-based `:rule-index`. Duplicate-ID errors include `:rule-ids`, listing each
+duplicated ID once in first appearance order.
+
 Independent rules can be reordered without changing the resulting facts. The
 `:fired` trace follows the order in the rules vector. Every matching rule fires
 on every step; use a fact in its guard if it should fire only once.
