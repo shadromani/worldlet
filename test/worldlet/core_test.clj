@@ -71,6 +71,28 @@
   (is (thrown? clojure.lang.ExceptionInfo
                (w/step (w/world {:x 0} [{:id :change :when [[:< :x 1]] :set {:x :oops}}])))))
 
+(deftest validation-errors-identify-the-offending-rules
+  (testing "duplicate IDs are reported once, in first appearance order"
+    (let [rule (fn [id] {:id id :when [] :set {:x 1}})]
+      (try
+        (w/world {:x 0} (mapv rule [:second :first :second :first :second]))
+        (is false "Expected duplicate rule IDs to be rejected")
+        (catch clojure.lang.ExceptionInfo e
+          (is (= [:second :first] (:rule-ids (ex-data e))))))))
+  (testing "invalid rules include their zero-based position, even when inactive"
+    (let [valid {:id :valid :when [] :set {:x 1}}
+          invalid {:id :invalid :when [[:= :x 99]] :add {:x "one"}}
+          input {:tick 0 :facts {:x 0} :rules [valid invalid]}]
+      (doseq [run [#(w/world (:facts input) (:rules input))
+                   #(w/step input)
+                   #(w/advance input 0)]]
+        (try
+          (run)
+          (is false "Expected the inactive invalid rule to be rejected")
+          (catch clojure.lang.ExceptionInfo e
+            (is (= 1 (:rule-index (ex-data e))))
+            (is (= invalid (:rule (ex-data e))))))))))
+
 (deftest boundaries
   (let [empty-world (w/world {} [])]
     (is (= {:tick 1 :facts {} :rules []} (:world (w/step empty-world))))

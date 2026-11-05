@@ -24,9 +24,12 @@
                    (fact-map? facts) (vector? rules))
       (fail "Expected a world with nonnegative :tick, scalar :facts and vector :rules"
             {:world world}))
-    (when-not (= (count rules) (count (distinct (map :id rules))))
-      (fail "Rule ids must be unique" {}))
-    (doseq [rule rules]
+    (let [ids (mapv :id rules)
+          counts (frequencies ids)
+          duplicates (filterv #(> (get counts %) 1) (distinct ids))]
+      (when (seq duplicates)
+        (fail "Rule ids must be unique" {:rule-ids duplicates})))
+    (doseq [[index rule] (map-indexed vector rules)]
       (let [{:keys [id when set add] :or {set {} add {}}} rule]
         (when-not (and (map? rule) (keyword? id)
                        (every? #{:id :when :set :add} (keys rule))
@@ -37,7 +40,7 @@
                        (every? (fn [[k v]] (and (integer? v) (integer? (get facts k)))) add)
                        (not-any? #(contains? set %) (keys add)))
           (fail "Invalid rule: check predicates, existing fact keys and effects"
-                {:rule rule})))))
+                {:rule rule :rule-index index})))))
   world)
 
 (defn world
