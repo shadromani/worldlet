@@ -111,7 +111,8 @@ Keep a world from a history, then change a fact to try a counterfactual. No
 special branching API is needed: each branch is an ordinary immutable value.
 
 ```clojure
-(require '[worldlet.demo :as demo])
+(require '[worldlet.core :as w]
+         '[worldlet.demo :as demo])
 
 (def saved (:world (last (w/advance (demo/staircase) 3))))
 ;; saved is at tick 3: the moon has just fallen asleep, with zero stairs.
