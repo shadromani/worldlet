@@ -103,3 +103,23 @@
          (get-in (w/step (w/world {:x Long/MAX_VALUE}
                                   [{:id :grow :when [] :add {:x 1}}]))
                  [:world :facts :x]))))
+
+(deftest saved-worlds-support-independent-continuations
+  (let [initial (demo/staircase)
+        history (w/advance initial 3)
+        saved (:world (last history))
+        waking-early (assoc-in saved [:facts :moon] :awake)
+        asleep-history (w/advance saved 2)
+        awake-history (w/advance waking-early 2)
+        stairs (fn [results] (mapv #(get-in % [:world :facts :stairs]) results))]
+    (is (= [1 2] (stairs asleep-history)))
+    (is (= [0 0] (stairs awake-history)))
+    (is (= [4 5] (mapv #(get-in % [:world :tick]) awake-history)))
+    (is (= 3 (:tick waking-early)))
+    (is (= (:rules saved) (:rules waking-early)))
+    (is (= {:hour 3 :moon :asleep :stairs 0} (:facts saved)))
+    (is (= history (w/advance initial 3)))
+    (is (= asleep-history (w/advance saved 2)))
+    (testing "edited branches are still validated, even for zero steps"
+      (is (thrown? clojure.lang.ExceptionInfo
+                   (w/advance (assoc-in saved [:facts :stairs] :invalid) 0))))))

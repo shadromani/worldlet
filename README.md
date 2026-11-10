@@ -105,6 +105,33 @@ different continuation from it. The interpreter never evaluates code from a
 rule. This is a data language, **not a resource-limited sandbox**: callers remain
 responsible for input size and the number of steps retained in memory.
 
+## Explore a different continuation
+
+Keep a world from a history, then change a fact to try a counterfactual. No
+special branching API is needed: each branch is an ordinary immutable value.
+
+```clojure
+(require '[worldlet.core :as w]
+         '[worldlet.demo :as demo])
+
+(def saved (:world (last (w/advance (demo/staircase) 3))))
+;; saved is at tick 3: the moon has just fallen asleep, with zero stairs.
+(def waking-early (assoc-in saved [:facts :moon] :awake))
+
+(defn stairs-after [branch]
+  (mapv #(get-in % [:world :facts :stairs]) (w/advance branch 2)))
+
+(stairs-after saved)          ; => [1 2]
+(stairs-after waking-early)   ; => [0 0]
+(:tick waking-early)          ; => 3 (the branch keeps the saved tick)
+(:facts saved)               ; => {:hour 3, :moon :asleep, :stairs 0}
+```
+
+Both continuations use the same rules. Changing one branch does not change the
+saved world or the other branch. `step` and `advance` validate edited worlds too,
+so a branch must still satisfy the language's fact and rule constraints. These
+values are in-memory snapshots, not an automatic persistence or merge system.
+
 ## Test
 
 ```sh
@@ -112,7 +139,8 @@ clojure -M:test
 ```
 
 The tests cover the example trace, snapshot timing, conflicting writes,
-predicates, validation, empty worlds and integer overflow boundaries.
+predicates, validation, independent continuations, empty worlds and integer
+overflow boundaries.
 
 This first version deliberately stops at a small interpreter. No renderer,
 network service, randomness, scheduler or automatic persistence is included.
